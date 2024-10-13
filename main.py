@@ -1,15 +1,15 @@
-# pyright: reportIgnoreCommentWithoutRule=false
+# pyright: reportIgnoreCommentWithoutRule=false, reportUnusedCallResult=false
 
 from fastapi import FastAPI
-import sqlite3
-import datetime
+from sqlite3 import connect, Date
+from datetime import datetime
 
 from pydantic import BaseModel
 
 from config import settings
 
 app = FastAPI()
-con = sqlite3.connect(settings.db_name)
+con = connect(settings.db_name)
 
 
 @app.get("/api/leaderboard")
@@ -32,10 +32,11 @@ async def timer():
 
 class Exchange(BaseModel):
     user: str
-    date: datetime.date | None = datetime.now().date()  # pyright: ignore
+    date: Date | None = datetime.now().date()
 
 
 @app.post("/api/exchange")
 async def exchange(body: Exchange):
-    print(body)
-    return {"message": "Hello World"}
+    cur = con.cursor()
+    cur.execute("INSERT INTO ownership VALUES (?, ?)", (body.user, body.date))
+    con.commit()
