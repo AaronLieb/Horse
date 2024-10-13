@@ -16,7 +16,7 @@ con = connect(settings.db_name)
 async def leaderboard():
     # Return a 2D array of people mapped to how many days they've held the horse total
     cursor = con.cursor()
-    cursor.execute('SELECT username, days_held FROM ownership ORDER BY days_held DESC')
+    cursor.execute('SELECT username, days_held FROM leaderboard ORDER BY days_held DESC')
 
     rows = cursor.fetchall()
     leaderboard = [[row[0], row[1]] for row in rows]
