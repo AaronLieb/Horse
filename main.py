@@ -15,7 +15,12 @@ con = connect(settings.db_name)
 @app.get("/api/leaderboard")
 async def leaderboard():
     # Return a 2D array of people mapped to how many days they've held the horse total
-    return {"message": "Hello World"}
+    cursor = con.cursor()
+    cursor.execute('SELECT username, days_held FROM ownership ORDER BY days_held DESC')
+
+    rows = cursor.fetchall()
+    leaderboard = [[row[0], row[1]] for row in rows]
+    return {"message": leaderboard}
 
 
 @app.get("/api/history")
