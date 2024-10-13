@@ -29,6 +29,18 @@ Create a python virtual environment
 python -m venv venv
 ```
 
+Enter the virtual environment
+
+Linux + Mac
+```bash
+source venv/bin/activate
+```
+
+Windows
+```powershell
+venv\Scripts\Activate.ps1
+```
+
 Install the dependencies
 ```bash
 pip install -r requirements.txt
