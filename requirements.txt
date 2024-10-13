@@ -1,4 +1,6 @@
 fastapi[standard]
+pydantic
+pydantic_settings
 black
 isort
 pytest
