@@ -43,5 +43,5 @@ class Exchange(BaseModel):
 @app.post("/api/exchange")
 async def exchange(body: Exchange):
     cur = con.cursor()
-    cur.execute("INSERT INTO ownership VALUES (?, ?)", (body.user, body.date))
+    cur.execute("INSERT INTO ownership VALUES (?, ?)", (body.date, body.user))
     con.commit()
