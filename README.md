@@ -33,3 +33,8 @@ Install the dependencies
 ```bash
 pip install -r requirements.txt
 ```
+
+Start the development server
+```bash
+fastapi dev main.py
+```
