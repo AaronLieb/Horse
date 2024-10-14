@@ -22,12 +22,27 @@ async def leaderboard():
 
     rows: list[list[int | str]] = cursor.fetchall()
     leaderboard = [[row[0], row[1]] for row in rows]
+
+    cursor.execute('SELECT username, date FROM ownership ORDER BY date DESC LIMIT 1')
+    recent_holder = cursor.fetchone()
+
+    recent_date = datetime.strptime(recent_holder[1], "%Y-%m-%d")
+    extra_days = (datetime.today() - recent_date).days
+    for row in leaderboard:
+        if row[0] == recent_holder[0]:
+            row[1] += extra_days
+
     return {"leaderboard": leaderboard}
 
 
 @app.get("/api/history")
 async def history():
     # Return a 2D array of the entire history of the horse exchanges
+    cursor = con.cursor()
+    cursor.execute('SELECT username, date FROM ownership ORDER BY days_held DESC')
+
+    rows = cursor.fetchall()
+    leaderboard = [[row[0], row[1]] for row in rows]
     return {"message": "Hello World"}
 
 
