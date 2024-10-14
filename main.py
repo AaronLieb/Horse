@@ -1,7 +1,7 @@
 # pyright: reportIgnoreCommentWithoutRule=false, reportUnusedCallResult=false
 
 from fastapi import FastAPI
-from sqlite3 import connect, Date
+from sqlite3 import connect
 from datetime import datetime, date
 
 from pydantic import BaseModel
@@ -20,9 +20,9 @@ async def leaderboard():
         "SELECT username, days_held FROM leaderboard ORDER BY days_held DESC"
     )
 
-    rows = cursor.fetchall()
+    rows: list[list[int | str]] = cursor.fetchall()
     leaderboard = [[row[0], row[1]] for row in rows]
-    return {"message": leaderboard}
+    return {"leaderboard": leaderboard}
 
 
 @app.get("/api/history")
@@ -33,8 +33,14 @@ async def history():
 
 @app.get("/api/timer")
 async def timer():
-    # This will return the number of days until someone can challenge for the horse again
-    return {"message": "Hello World"}
+    cur = con.cursor()
+
+    # Fetch the most recent exchange
+    cur.execute("SELECT date FROM ownership ORDER BY date LIMIT 1")
+    result: list[str] | None = cur.fetchone()
+
+    time_remaining = result[0] if result is not None else 0
+    return {"time_remaining": time_remaining}
 
 
 class Exchange(BaseModel):
@@ -47,28 +53,32 @@ async def exchange(body: Exchange):
     cur = con.cursor()
 
     # Fetch the most recent exchange
-    cur.execute("SELECT * FROM ownership ORDER BY date LIMIT 1")
-    result = cur.fetchone()
-    prev_date: str = result[0]
-    prev_user: str = result[1]
+    cur.execute("SELECT date, username FROM ownership ORDER BY date LIMIT 1")
+    latest_exchange: list[str] | None = cur.fetchone()
 
-    diff_days = (
-        body.exchange_date - datetime.strptime(prev_date, "%Y-%m-%d").date()
-    ).days
+    if latest_exchange is not None:
+        prev_date: str = latest_exchange[0]
+        prev_user: str = latest_exchange[1]
 
-    # Fetch their current days_held
-    cur.execute("SELECT days_held FROM leaderboard WHERE username = ?", (prev_user,))
-    result = cur.fetchone()
-    if result is None:
-        # Add user to leaderboard
-        cur.execute("INSERT INTO leaderboard VALUES (?, ?)", (prev_user, 0))
-    else:
-        # Update their current days_held
-        days_held: int = result[0]
+        diff_days = (
+            body.exchange_date - datetime.strptime(prev_date, "%Y-%m-%d").date()
+        ).days
+
+        # Fetch their current days_held
         cur.execute(
-            "UPDATE leaderboard SET days_held = ? WHERE username = ?",
-            (days_held + diff_days, prev_user),
+            "SELECT days_held FROM leaderboard WHERE username = ?", (prev_user,)
         )
+        result: list[int] | None = cur.fetchone()
+        if result is None:
+            # Add user to leaderboard
+            cur.execute("INSERT INTO leaderboard VALUES (?, ?)", (prev_user, 0))
+        else:
+            # Update their current days_held
+            days_held: int = result[0]
+            cur.execute(
+                "UPDATE leaderboard SET days_held = ? WHERE username = ?",
+                (days_held + diff_days, prev_user),
+            )
 
     cur.execute("INSERT INTO ownership VALUES (?, ?)", (body.exchange_date, body.user))
     con.commit()
